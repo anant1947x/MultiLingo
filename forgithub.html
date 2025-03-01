@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiLingo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Three.js for 3D background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .mic-active {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        body {
+            background-color: #f3f4ff;
+            overflow-x: hidden;
+        }
+        
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -10;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+            box-shadow: 0 0 20px rgba(138, 120, 255, 0.2);
+            animation: float 15s infinite ease-in-out;
+            z-index: -5;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(0) translateX(20px); }
+            75% { transform: translateY(20px) translateX(10px); }
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #6366f1);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 8s ease infinite;
+        }
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .btn-animated {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .btn-animated:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        .btn-animated::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(30deg);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .btn-animated:hover::after {
+            opacity: 1;
+            animation: shine 1.5s ease;
+        }
+        @keyframes shine {
+            0% { transform: rotate(30deg) translateX(-300%); }
+            100% { transform: rotate(30deg) translateX(300%); }
+        }
+        
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            animation: shimmer-animation 2s infinite;
+            transform: skewX(-20deg);
+        }
+        @keyframes shimmer-animation {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+        
+        .floating-icon {
+            animation: float-icon 3s ease-in-out infinite;
+        }
+        @keyframes float-icon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .stagger-fade-in {
+            opacity: 0;
+        }
+        
+        @keyframes bounce-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.95); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .bounce-in {
+            animation: bounce-in 0.6s ease forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="bubble" style="width: 150px; height: 150px; top: 15%; left: 10%; animation-delay: 0s;"></div>
+    <div class="bubble" style="width: 100px; height: 100px; top: 40%; left: 80%; animation-delay: 2s;"></div>
+    <div class="bubble" style="width: 200px; height: 200px; top: 70%; left: 20%; animation-delay: 4s;"></div>
+    <div class="bubble" style="width: 80px; height: 80px; top: 20%; left: 70%; animation-delay: 6s;"></div>
+    <div class="bubble" style="width: 120px; height: 120px; top: 60%; left: 60%; animation-delay: 8s;"></div>
+
+    <div class="container mx-auto px-4 py-8 relative z-10">
+        <header class="text-center mb-8 stagger-fade-in">
+            <h1 class="text-5xl md:text-7xl font-bold gradient-text mb-8 leading-tight min-h-[83px]">MultiLingo</h1>
+            <p class="text-gray-600">Translate text, speech, and even emojis across multiple languages!</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 glass rounded-xl shadow-lg overflow-hidden stagger-fade-in">
+                <div class="bg-indigo-100 bg-opacity-50 p-4 flex items-center justify-between">
+                    <div class="w-2/5">
+                        <select id="sourceLang" class="w-full p-2 rounded-lg border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all hover:border-indigo-300">
+                            <option value="auto">Auto Detect</option>
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="ru">Russian</option>
+                            <option value="ja">Japanese</option>
+                            <option value="ko">Korean</option>
+                            <option value="zh">Chinese (Simplified)</option>
+                            <option value="ar">Arabic</option>
+                            <option value="hi">Hindi</option>
+                            <option value="bn">Bengali</option>
+                            <option value="tr">Turkish</option>
+                            <option value="vi">Vietnamese</option>
+                            <option value="th">Thai</option>
+                            <option value="nl">Dutch</option>
+                            <option value="sv">Swedish</option>
+                            <option value="pl">Polish</option>
+                        </select>
+                    </div>
+                    
+                    <button id="swapLangs" class="bg-white p-2 rounded-full shadow hover:bg-indigo-50 transition-all transform hover:rotate-180 duration-300">
+                        <i class="fas fa-exchange-alt text-indigo-500"></i>
+                    </button>
+                    
+                    <div class="w-2/5">
+                        <select id="targetLang" class="w-full p-2 rounded-lg border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all hover:border-indigo-300">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="ru">Russian</option>
+                            <option value="ja">Japanese</option>
+                            <option value="ko">Korean</option>
+                            <option value="zh">Chinese (Simplified)</option>
+                            <option value="ar">Arabic</option>
+                            <option value="hi">Hindi</option>
+                            <option value="bn">Bengali</option>
+                            <option value="tr">Turkish</option>
+                            <option value="vi">Vietnamese</option>
+                            <option value="th">Thai</option>
+                            <option value="nl">Dutch</option>
+                            <option value="sv">Swedish</option>
+                            <option value="pl">Polish</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-4 stagger-fade-in">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="inputText" class="text-gray-700 font-medium">Enter text to translate:</label>
+                        <span id="charCount" class="text-sm text-gray-500">0/5000</span>
+                    </div>
+                    
+                    <div class="relative">
+                        <textarea 
+                            id="inputText" 
+                            class="w-full h-32 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none transition-all"
+                            placeholder="Type or paste your text here..."
+                            maxlength="5000"
+                        ></textarea>
+                        
+                        <div class="absolute right-2 bottom-2 flex space-x-1">
+                            <button id="clearText" class="text-gray-400 hover:text-gray-600 p-1 transition-all hover:scale-110">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button id="micButton" class="text-gray-400 hover:text-gray-600 p-1 transition-all hover:scale-110">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="detectedLangContainer" class="mt-2 text-sm text-gray-600 hidden">
+                        <span>Detected language: <span id="detectedLang" class="font-medium"></span></span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 mt-4 stagger-fade-in">
+                        <button 
+                            id="translateBtn" 
+                            onclick="translateText()"
+                            class="btn-animated bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center disabled:opacity-50"
+                            disabled
+                        >
+                            <i class="fas fa-language mr-2"></i> Translate
+                        </button>
+                        
+                        <button 
+                            id="voiceToVoiceBtn"
+                            class="btn-animated bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                        >
+                            <i class="fas fa-microphone mr-2"></i> Voice to Voice
+                        </button>
+                        
+                        <button 
+                            id="emojiTranslateBtn"
+                            class="btn-animated bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center"
+                        >
+                            <i class="far fa-smile mr-2"></i> Emoji Translate
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-100 p-4 stagger-fade-in">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-gray-700 font-medium">Translation:</label>
+                        <div class="flex space-x-2">
+                            <button 
+                                id="copyBtn" 
+                                class="text-xs border border-gray-200 rounded px-2 py-1 flex items-center hover:bg-gray-50 disabled:opacity-50 transition-all hover:scale-105" 
+                                disabled
+                            >
+                                <i class="fas fa-copy mr-1"></i> Copy
+                            </button>
+                            <button 
+                                id="speakBtn" 
+                                class="text-xs border border-gray-200 rounded px-2 py-1 flex items-center hover:bg-gray-50 disabled:opacity-50 transition-all hover:scale-105" 
+                                disabled
+                            >
+                                <i class="fas fa-volume-up mr-1"></i> Speak
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div 
+                        id="translatedText"
+                        class="shimmer w-full min-h-32 p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                    >
+                        Translation will appear here...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="glass rounded-xl shadow-lg overflow-hidden stagger-fade-in">
+                    <div class="bg-indigo-100 bg-opacity-50 p-4 flex justify-between items-center">
+                        <h2 class="font-semibold text-indigo-800 flex items-center">
+                            <i class="fas fa-history mr-2 floating-icon"></i> Recent Translations
+                        </h2>
+                        <button id="clearHistory" class="text-xs text-indigo-600 hover:text-indigo-800 transition-all hover:scale-105">
+                            Clear All
+                        </button>
+                    </div>
+                    <div id="historyContainer" class="p-4 max-h-64 overflow-y-auto">
+                        <p class="text-gray-500 text-sm text-center italic">No recent translations</p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-xl shadow-lg overflow-hidden stagger-fade-in">
+                    <div class="bg-indigo-100 bg-opacity-50 p-4">
+                        <h2 class="font-semibold text-indigo-800 flex items-center">
+                            <i class="fas fa-star mr-2 floating-icon"></i> Features
+                        </h2>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-start feature-item">
+                            <i class="fas fa-microphone text-indigo-500 mt-1 mr-3 floating-icon"></i>
+                            <p class="text-sm text-gray-700">Voice-to-voice translation across languages</p>
+                        </div>
+                        <div class="flex items-start feature-item">
+                            <i class="fas fa-globe text-indigo-500 mt-1 mr-3 floating-icon"></i>
+                            <p class="text-sm text-gray-700">Support for 20+ languages</p>
+                        </div>
+                        <div class="flex items-start feature-item">
+                            <i class="far fa-smile text-indigo-500 mt-1 mr-3 floating-icon"></i>
+                            <p class="text-sm text-gray-700">Emoji translation for fun communication</p>
+                        </div>
+                        <div class="flex items-start feature-item">
+                            <i class="fas fa-magic text-indigo-500 mt-1 mr-3 floating-icon"></i>
+                            <p class="text-sm text-gray-700">Auto-detect source language</p>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+        </div>
+    </div>
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 backdrop-filter backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="glass p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+            <p id="loadingText" class="text-gray-700">Translating your text...</p>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, particles;
+        let mouseX = 0, mouseY = 0;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+            
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('bg-canvas'),
+                alpha: true 
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            
+            const posArray = new Float32Array(particleCount * 3);
+            const colorsArray = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                
+                posArray[i] = (Math.random() - 0.5) * 50;
+                posArray[i + 1] = (Math.random() - 0.5) * 50;
+                posArray[i + 2] = (Math.random() - 0.5) * 50;
+                
+                const ratio = Math.random();
+                colorsArray[i] = 0.4 + ratio * 0.2;      
+                colorsArray[i + 1] = 0.3 + ratio * 0.2;  
+                colorsArray[i + 2] = 0.8 + ratio * 0.2;  
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.2,
+                transparent: true,
+                opacity: 0.8,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+            
+            document.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onWindowResize);
+            
+            animate();
+        }
+        
+        function onMouseMove(event) {
+            mouseX = (event.clientX - window.innerWidth / 2) / 100;
+            mouseY = (event.clientY - window.innerHeight / 2) / 100;
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            particles.rotation.x += 0.0005;
+            particles.rotation.y += 0.0005;
+            
+            particles.rotation.x += (mouseY * 0.0005 - particles.rotation.x) * 0.05;
+            particles.rotation.y += (mouseX * 0.0005 - particles.rotation.y) * 0.05;
+            
+            renderer.render(scene, camera);
+        }
+        
+        function initGSAPAnimations() {
+            const staggerElements = document.querySelectorAll('.stagger-fade-in');
+            gsap.fromTo(
+                staggerElements, 
+                { opacity: 0, y: 20 }, 
+                { 
+                    opacity: 1, 
+                    y: 0, 
+                    duration: 0.8, 
+                    stagger: 0.1,
+                    ease: "power2.out"
+                }
+            );
+            
+            const featureItems = document.querySelectorAll('.feature-item');
+            gsap.fromTo(
+                featureItems,
+                { opacity: 0, x: -20 },
+                {
+                    opacity: 1,
+                    x: 0,
+                    duration: 0.5,
+                    stagger: 0.1,
+                    delay: 0.5,
+                    ease: "back.out(1.7)"
+                }
+            );
+            
+            gsap.fromTo(
+                'header',
+                { opacity: 0, scale: 0.9 },
+                {
+                    opacity: 1,
+                    scale: 1,
+                    duration: 1,
+                    ease: "elastic.out(1, 0.5)"
+                }
+            );
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initThreeJS();
+            
+            initGSAPAnimations();
+            
+            inputText.addEventListener('input', updateCharCount);
+            clearText.addEventListener('click', function() {
+                inputText.value = '';
+                updateCharCount();
+            });
+            swapLangs.addEventListener('click', swapLanguages);
+            copyBtn.addEventListener('click', copyTranslation);
+            speakBtn.addEventListener('click', speakTranslation);
+            micButton.addEventListener('click', toggleSpeechRecognition);
+            clearHistory.addEventListener('click', clearTranslationHistory);
+            voiceToVoiceBtn.addEventListener('click', startVoiceToVoiceTranslation);
+            emojiTranslateBtn.addEventListener('click', translateToEmoji);
+            updateCharCount();
+        });
+
+        const inputText = document.getElementById('inputText');
+        const translateBtn = document.getElementById('translateBtn');
+        const translatedText = document.getElementById('translatedText');
+        const sourceLang = document.getElementById('sourceLang');
+        const targetLang = document.getElementById('targetLang');
+        const swapLangs = document.getElementById('swapLangs');
+        const charCount = document.getElementById('charCount');
+        const clearText = document.getElementById('clearText');
+        const copyBtn = document.getElementById('copyBtn');
+        const speakBtn = document.getElementById('speakBtn');
+        const micButton = document.getElementById('micButton');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const historyContainer = document.getElementById('historyContainer');
+        const clearHistory = document.getElementById('clearHistory');
+        const detectedLangContainer = document.getElementById('detectedLangContainer');
+        const detectedLang = document.getElementById('detectedLang');
+        const voiceToVoiceBtn = document.getElementById('voiceToVoiceBtn');
+        const emojiTranslateBtn = document.getElementById('emojiTranslateBtn');
+
+        const langMap = {
+            "auto": "Auto Detect",
+            "en": "English",
+            "es": "Spanish",
+            "fr": "French",
+            "de": "German",
+            "it": "Italian",
+            "pt": "Portuguese",
+            "ru": "Russian",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "zh": "Chinese (Simplified)",
+            "ar": "Arabic",
+            "hi": "Hindi",
+            "bn": "Bengali",
+            "tr": "Turkish",
+            "vi": "Vietnamese",
+            "th": "Thai",
+            "nl": "Dutch",
+            "sv": "Swedish",
+            "pl": "Polish"
+        };
+
+        const fullLangMap = {
+            "en": "English",
+            "es": "Spanish",
+            "fr": "French",
+            "de": "German",
+            "it": "Italian",
+            "pt": "Portuguese",
+            "ru": "Russian",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "zh": "Chinese",
+            "ar": "Arabic",
+            "hi": "Hindi",
+            "bn": "Bengali",
+            "tr": "Turkish",
+            "vi": "Vietnamese",
+            "th": "Thai",
+            "nl": "Dutch",
+            "sv": "Swedish",
+            "pl": "Polish"
+        };
+
+        let translationHistory = JSON.parse(localStorage.getItem('translationHistory')) || [];
+        updateHistoryDisplay();
+
+        function updateCharCount() {
+            const count = inputText.value.length;
+            charCount.textContent = `${count}/5000`;
+            translateBtn.disabled = count === 0;
+            translateBtn.classList.toggle('opacity-50', count === 0);
+        }
+
+        function swapLanguages() {
+            if (sourceLang.value === 'auto') {
+                showNotification('Cannot swap when using Auto Detect', 'warning');
+                return;
+            }
+            
+            gsap.to(swapLangs, {
+                rotation: 180,
+                duration: 0.5,
+                ease: "back.out(1.7)",
+                onComplete: function() {
+                    gsap.set(swapLangs, { rotation: 0 });
+                }
+            });
+            
+            const temp = sourceLang.value;
+            sourceLang.value = targetLang.value;
+            targetLang.value = temp;
+            
+            if (translatedText.textContent !== 'Translation will appear here...' && 
+                !translatedText.textContent.includes('Error') && 
+                !translatedText.textContent.includes('Translating...')) {
+                const tempText = inputText.value;
+                inputText.value = translatedText.textContent;
+                translatedText.textContent = tempText;
+                updateCharCount();
+            }
+        }
+        function copyTranslation() {
+            const text = translatedText.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+               
+                gsap.to(copyBtn, {
+                    scale: 1.2,
+                    duration: 0.2,
+                    ease: "power1.out",
+                    onComplete: function() {
+                        gsap.to(copyBtn, {
+                            scale: 1,
+                            duration: 0.2,
+                            ease: "power1.in"
+                        });
+                    }
+                });
+                
+                copyBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
+                copyBtn.classList.add('bg-green-100', 'text-green-700', 'border-green-200');
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy mr-1"></i> Copy';
+                    copyBtn.classList.remove('bg-green-100', 'text-green-700', 'border-green-200');
+                }, 2000);
+                showNotification('Copied to clipboard!', 'success');
+            });
+        }
+
+        function speakTranslation() {
+            const text = translatedText.textContent;
+            const lang = targetLang.value;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            
+            gsap.to(speakBtn, {
+                scale: 1.1,
+                duration: 0.3,
+                repeat: 5,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+            
+            speakBtn.innerHTML = '<i class="fas fa-volume-up mr-1"></i> Speaking...';
+            speakBtn.classList.add('bg-indigo-100');
+            utterance.onend = function() {
+                speakBtn.innerHTML = '<i class="fas fa-volume-up mr-1"></i> Speak';
+                speakBtn.classList.remove('bg-indigo-100');
+                gsap.to(speakBtn, {
+                    scale: 1,
+                    duration: 0.2
+                });
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+
+        let recognition;
+        let isListening = false;
+
+        function setupSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showNotification('Speech recognition is not supported in your browser', 'error');
+                return false;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = sourceLang.value === 'auto' ? 'en-US' : sourceLang.value;
+            recognition.onresult = function(event) {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0])
+                    .map(result => result.transcript)
+                    .join('');
+                inputText.value = transcript;
+                updateCharCount();
+            };
+            recognition.onend = function() {
+                stopListening();
+            };
+            recognition.onerror = function(event) {
+                stopListening();
+                showNotification(`Speech recognition error: ${event.error}`, 'error');
+            };
+            return true;
+        }
+
+        function toggleSpeechRecognition() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+
+        function startListening() {
+            if (!setupSpeechRecognition()) return;
+            try {
+                inputText.value = '';
+                inputText.placeholder = 'Listening...';
+                
+                gsap.to(micButton, {
+                    scale: 1.2,
+                    duration: 0.5,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+                
+                micButton.classList.add('mic-active', 'text-red-500');
+                micButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                recognition.start();
+                isListening = true;
+                showNotification('Listening... Speak now', 'info');
+            } catch (error) {
+                showNotification(`Could not start speech recognition: ${error.message}`, 'error');
+            }
+        }
+
+        function stopListening() {
+            if (!recognition) return;
+            try {
+                recognition.stop();
+            } catch (e) {
+              
+            }
+            isListening = false;
+            
+            gsap.to(micButton, {
+                scale: 1,
+                duration: 0.2
+            });
+            
+            micButton.classList.remove('mic-active', 'text-red-500');
+            micButton.innerHTML = '<i class="fas fa-microphone"></i>';
+            inputText.placeholder = 'Type or paste your text here...';
+        }
+
+        function addToHistory(sourceText, translatedText, sourceLangCode, targetLangCode) {
+            const historyItem = {
+                id: Date.now(),
+                sourceText: truncateText(sourceText, 50),
+                translatedText: truncateText(translatedText, 50),
+                sourceLang: sourceLangCode,
+                targetLang: targetLangCode,
+                timestamp: new Date().toISOString()
+            };
+            translationHistory.unshift(historyItem);
+            if (translationHistory.length > 10) {
+                translationHistory.pop();
+            }
+            localStorage.setItem('translationHistory', JSON.stringify(translationHistory));
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            if (translationHistory.length === 0) {
+                historyContainer.innerHTML = '<p class="text-gray-500 text-sm text-center italic">No recent translations</p>';
+                return;
+            }
+            historyContainer.innerHTML = '';
+            translationHistory.forEach((item, index) => {
+                const historyElement = document.createElement('div');
+                historyElement.className = 'history-item mb-3 pb-3 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0 cursor-pointer hover:bg-indigo-50 rounded p-2 transition-all';
+                historyElement.innerHTML = `
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>${langMap[item.sourceLang]} → ${langMap[item.targetLang]}</span>
+                        <span>${formatTimestamp(item.timestamp)}</span>
+                    </div>
+                    <p class="text-sm font-medium">${item.sourceText}</p>
+                    <p class="text-sm text-gray-600">${item.translatedText}</p>
+                `;
+                historyElement.addEventListener('click', () => {
+                    restoreTranslation(item);
+                });
+                
+                historyContainer.appendChild(historyElement);
+                gsap.fromTo(
+                    historyElement,
+                    { opacity: 0, x: -20 },
+                    { 
+                        opacity: 1, 
+                        x: 0, 
+                        duration: 0.3, 
+                        delay: index * 0.05,
+                        ease: "power1.out" 
+                    }
+                );
+            });
+        }
+
+        function restoreTranslation(historyItem) {
+            const fullItem = translationHistory.find(item => item.id === historyItem.id);
+            sourceLang.value = fullItem.sourceLang;
+            targetLang.value = fullItem.targetLang;
+            inputText.value = fullItem.sourceText;
+            updateCharCount();
+            translatedText.textContent = fullItem.translatedText;
+            copyBtn.disabled = false;
+            speakBtn.disabled = false;
+            gsap.to(window, {
+                duration: 0.8,
+                scrollTo: { y: '.lg\\:col-span-2', offsetY: 50 },
+                ease: "power2.inOut"
+            });
+            
+            gsap.fromTo(
+                translatedText,
+                { backgroundColor: "#e0e7ff" },
+                { backgroundColor: "#f9fafb", duration: 1.5, ease: "power1.out" }
+            );
+            
+            showNotification('Translation restored', 'success');
+        }
+
+        function clearTranslationHistory() {
+            gsap.to(historyContainer, {
+                opacity: 0,
+                y: -20,
+                duration: 0.3,
+                onComplete: function() {
+                    translationHistory = [];
+                    localStorage.removeItem('translationHistory');
+                    updateHistoryDisplay();
+                    gsap.to(historyContainer, {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.3
+                    });
+                }
+            });
+            
+            showNotification('Translation history cleared', 'info');
+        }
+
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            return date.toLocaleDateString();
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 animate__animated animate__fadeInUp`;
+            
+            switch (type) {
+                case 'success':
+                    notification.classList.add('glass', 'bg-green-500', 'bg-opacity-80', 'text-white');
+                    notification.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+                    break;
+                case 'error':
+                    notification.classList.add('glass', 'bg-red-500', 'bg-opacity-80', 'text-white');
+                    notification.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
+                    break;
+                case 'warning':
+                    notification.classList.add('glass', 'bg-yellow-500', 'bg-opacity-80', 'text-white');
+                    notification.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>${message}`;
+                    break;
+                default:
+                    notification.classList.add('glass', 'bg-indigo-500', 'bg-opacity-80', 'text-white');
+                    notification.innerHTML = `<i class="fas fa-info-circle mr-2"></i>${message}`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            gsap.fromTo(
+                notification,
+                { y: 50, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }
+            );
+            
+            setTimeout(() => {
+                gsap.to(notification, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.5,
+                    ease: "power2.in",
+                    onComplete: function() {
+                        document.body.removeChild(notification);
+                    }
+                });
+            }, 3000);
+        }
+        async function translateText() {
+            const API_KEY = "";  // ⚠ Replace with your actual API key
+            let text = inputText.value.trim();
+            let source = sourceLang.value;
+            let target = targetLang.value;
+            if (!text) {
+                showNotification('Please enter text to translate', 'warning');
+                return;
+            }
+            loadingOverlay.style.display = 'flex';
+            gsap.fromTo(
+                loadingOverlay,
+                { opacity: 0 },
+                { opacity: 1, duration: 0.3 }
+            );
+            
+            loadingText.textContent = 'Translating your text...';
+            
+            translateBtn.disabled = true;
+            
+            if (source !== 'auto') {
+                detectedLangContainer.classList.add('hidden');
+            }
+            
+            let targetLanguageName = fullLangMap[target] || "English";
+            
+            let prompt;
+            if (source === 'auto') {
+                prompt = `Translate the following text into ${targetLanguageName}: ${text}`;
+            } else {
+                let sourceLanguageName = fullLangMap[source] || "English";
+                prompt = `Translate the following text from ${sourceLanguageName} to ${targetLanguageName}: ${text}`;
+            }
+            
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [
+                                {
+                                    parts: [
+                                        { text: prompt }
+                                    ]
+                                }
+                            ],
+                            generationConfig: {
+                                temperature: 0.2,
+                                topP: 0.8,
+                                topK: 40
+                            }
+                        })
+                    }
+                );
+
+                const data = await response.json();
+                console.log("API Response:", data);
+                
+                let detectedLanguage = '';
+                if (source === 'auto' && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    const responseText = data.candidates[0].content.parts[0].text;
+                    const detectionMatch = responseText.match(/detected language is ([a-zA-Z]+)/i);
+                    
+                    if (detectionMatch && detectionMatch[1]) {
+                        detectedLanguage = detectionMatch[1];
+                        detectedLang.textContent = detectedLanguage;
+                        detectedLangContainer.classList.remove('hidden');
+                        
+                        gsap.fromTo(
+                            detectedLangContainer,
+                            { opacity: 0, y: -10 },
+                            { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+                        );
+                    }
+                }
+
+                if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    let translatedContent = data.candidates[0].content.parts[0].text;
+                    
+                    translatedContent = translatedContent
+                        .replace(/^Translation:/i, '')
+                        .replace(/^Translated text:/i, '')
+                        .trim();
+                    
+                    translatedText.classList.add('bounce-in');
+                    translatedText.textContent = translatedContent;
+                    
+                    addToHistory(text, translatedContent, source === 'auto' ? 'auto' : source, target);
+                    
+                    copyBtn.disabled = false;
+                    speakBtn.disabled = false;
+                    
+                    gsap.fromTo(
+                        [copyBtn, speakBtn],
+                        { scale: 0.8, opacity: 0.5 },
+                        { scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" }
+                    );
+                    
+                    showNotification('Translation complete!', 'success');
+                } else {
+                    console.error("Translation failed. API response:", data);
+                    translatedText.textContent = "Translation failed. Please try again.";
+                    showNotification('Translation failed', 'error');
+                }
+            } catch (error) {
+                console.error("❌ Error:", error);
+                translatedText.textContent = "Error: Could not translate. Please check your connection and try again.";
+                showNotification('Translation error', 'error');
+            } finally {
+                
+                gsap.to(loadingOverlay, {
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: function() {
+                        loadingOverlay.style.display = 'none';
+                    }
+                });
+                
+                translateBtn.disabled = false;
+                setTimeout(() => {
+                    translatedText.classList.remove('bounce-in');
+                }, 1000);
+            }
+        }
+
+        async function startVoiceToVoiceTranslation() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showNotification('Speech recognition is not supported in your browser', 'error');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = sourceLang.value === 'auto' ? 'en-US' : sourceLang.value;
+
+            showNotification('Listening for voice input...', 'info');
+            
+            gsap.to(voiceToVoiceBtn, {
+                scale: 1.1,
+                backgroundColor: "#059669",
+                duration: 0.3,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+            
+            micButton.classList.add('mic-active', 'text-red-500');
+
+            recognition.onresult = async function(event) {
+                const transcript = event.results[0][0].transcript;
+                inputText.value = transcript;
+                updateCharCount();
+                
+                gsap.to(voiceToVoiceBtn, {
+                    scale: 1,
+                    backgroundColor: "#059669",
+                    duration: 0.2
+                });
+                
+                await translateText();
+                speakTranslation();
+            };
+
+            recognition.onerror = function(event) {
+                showNotification(`Speech recognition error: ${event.error}`, 'error');
+                micButton.classList.remove('mic-active', 'text-red-500');
+                
+                gsap.to(voiceToVoiceBtn, {
+                    scale: 1,
+                    backgroundColor: "#059669",
+                    duration: 0.2
+                });
+            };
+
+            recognition.onend = function() {
+                micButton.classList.remove('mic-active', 'text-red-500');
+                
+                gsap.to(voiceToVoiceBtn, {
+                    scale: 1,
+                    backgroundColor: "#059669",
+                    duration: 0.2
+                });
+            };
+
+            recognition.start();
+        }
+
+        async function translateToEmoji() {
+            const text = inputText.value.trim();
+            if (!text) {
+                showNotification('Please enter text to translate to emoji', 'warning');
+                return;
+            }
+
+            loadingOverlay.style.display = 'flex';
+            gsap.fromTo(
+                loadingOverlay,
+                { opacity: 0 },
+                { opacity: 1, duration: 0.3 }
+            );
+            
+            loadingText.textContent = 'Translating to emoji...';
+            
+            gsap.to(emojiTranslateBtn, {
+                scale: 1.1,
+                backgroundColor: "#d97706",
+                duration: 0.3,
+                repeat: 3,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+
+            try {
+                const API_KEY = "AIzaSyBiIJNKAcieA8CiguTmE6veKa3wXRBqi7g";  // ⚠ Replace with your actual API key
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [
+                                {
+                                    parts: [
+                                        { text: `Translate the following text into emoji: ${text}. Only use emojis in your response, no text explanation.` }
+                                    ]
+                                }
+                            ],
+                            generationConfig: {
+                                temperature: 0.7,
+                                topP: 1,
+                                topK: 40
+                            }
+                        })
+                    }
+                );
+
+                const data = await response.json();
+                if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    let emojiTranslation = data.candidates[0].content.parts[0].text.trim();
+                    
+                    translatedText.classList.add('bounce-in');
+                    translatedText.textContent = emojiTranslation;
+                    
+                    const emojis = emojiTranslation.split('');
+                    if (emojis.length > 1) {
+                        translatedText.textContent = '';
+                        emojis.forEach((emoji, index) => {
+                            setTimeout(() => {
+                                translatedText.textContent += emoji;
+                            }, index * 100);
+                        });
+                    }
+                    
+                    copyBtn.disabled = false;
+                    speakBtn.disabled = true; 
+                    
+                    gsap.fromTo(
+                        copyBtn,
+                        { scale: 0.8, opacity: 0.5 },
+                        { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }
+                    );
+                    
+                    showNotification('Emoji translation complete!', 'success');
+                } else {
+                    throw new Error("Failed to generate emoji translation");
+                }
+            } catch (error) {
+                console.error("❌ Error:", error);
+                translatedText.textContent = "Error: Could not translate to emoji. Please try again.";
+                showNotification('Emoji translation error', 'error');
+            } finally {
+                gsap.to(loadingOverlay, {
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: function() {
+                        loadingOverlay.style.display = 'none';
+                    }
+                });
+                
+                gsap.to(emojiTranslateBtn, {
+                    scale: 1,
+                    backgroundColor: "#f59e0b",
+                    duration: 0.2
+                });
+                
+                setTimeout(() => {
+                    translatedText.classList.remove('bounce-in');
+                }, 1000);
+            }
+        }
+
+        async function detectLanguage(text) {
+            const patterns = {
+                en: /^[a-zA-Z\s.,!?'"-]+$/,
+                es: /[áéíóúüñ¿¡]/i,
+                fr: /[àâçéèêëîïôùûüÿ]/i,
+                de: /[äöüß]/i,
+                zh: /[\u4e00-\u9fff]/,
+                ja: /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/,
+                ru: /[\u0400-\u04FF]/,
+                ar: /[\u0600-\u06FF]/,
+                hi: /[\u0900-\u097F]/
+            };
+            
+            for (const [lang, pattern] of Object.entries(patterns)) {
+                if (pattern.test(text)) {
+                    return lang;
+                }
+            }
+            
+            return 'en'; 
+        }
+    </script>
+</body>
+</html>
