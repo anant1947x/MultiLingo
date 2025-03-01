@@ -10,7 +10,7 @@ Voice-to-Voice Translation: Translate spoken language across different languages
 
 Support for 20+ Languages: Communicate effectively in multiple global languages.
 
-Emoji Translation: Convert emojis into meaningful translations for fun communication.
+Emoji Translation: Convert texts to emojis for fun communication
 
 Auto-Detect Source Language: Automatically identify and translate the input language.
 
@@ -30,4 +30,4 @@ Backend: Node.js (Express / NestJS)
 
 API: AI-powered language translation API
 
-Hosting: Vercel / Netlify / AWS
+Hosting: Netlify
